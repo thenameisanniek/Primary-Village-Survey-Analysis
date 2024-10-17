@@ -1,0 +1,294 @@
+---
+title: "CSD Quarto"
+format: html
+editor: visual
+---
+
+```{r}
+library(highcharter) 
+library(readxl) 
+library(ggplot2) 
+library(dplyr)
+library(tidyverse)
+library(plotly)
+library(googlesheets4)
+#sample_data<-read_xlsx("C:/Users/annie/OneDrive/Desktop/Book1.xlsx")
+
+df<-read_xlsx("C:/Users/annie/OneDrive/Desktop/csd github.xlsx")
+
+#df = read_sheet("https://docs.google.com/spreadsheets/d/1aBFpJgDVlDqzhApJ7u1ZTJUdG91H-ZlfOLiLHzgLF5o/edit?pli=1&gid=2110327316#gid=2110327316", sheet =3)
+
+```
+
+```{r}
+#1
+fertilizer_counts <- df %>%
+  count(`4.3_Which_fertilizers_do_you_use?`) %>%
+  arrange(desc(n))
+
+highchart() %>%
+  hc_chart(type = "bar") %>%
+  hc_title(text = "Fertilizer Types Used") %>%
+  hc_xAxis(categories = `fertilizer_counts`$`4.3_Which_fertilizers_do_you_use?`) %>%
+  hc_yAxis(title = list(text = "Count")) %>%
+  hc_series(
+    list(
+      name = "Fertilizer Count",
+      data = as.numeric(fertilizer_counts$n)
+    )
+  )
+```
+
+```{r}
+#2
+brand_counts <- df %>%
+  count(`4.3.2_CHEMICALS_UREA_BRAND_DETAILS`) %>%
+  arrange(desc(n))
+  
+highchart() %>%
+  hc_chart(type = "pie") %>%
+  hc_title(text = "Urea Brand Distribution") %>%
+  hc_plotOptions(
+    pie = list(
+      allowPointSelect = TRUE,
+      cursor = "pointer",
+      dataLabels = list(enabled = TRUE, format = "<b>{point.name}</b>: {point.percentage:.1f}%")
+    )
+  ) %>%
+  hc_series(
+    list(
+      name = "Brands",
+      data = list_parse2(`brand_counts`)
+)
+)
+```
+
+```{r}
+#3
+data3 <- df %>% 
+  mutate(group = case_when(
+    HH_CHEMICALS_UREA_KG_ACRE== "Response not available" ~ "Response not available",
+    HH_CHEMICALS_UREA_KG_ACRE <= 100 ~ "0-100",
+    HH_CHEMICALS_UREA_KG_ACRE <= 200 ~ "100-200",
+    HH_CHEMICALS_UREA_KG_ACRE <= 300 ~ "200-300",
+    HH_CHEMICALS_UREA_KG_ACRE <= 400 ~ "300-400",
+    HH_CHEMICALS_UREA_KG_ACRE <= 500 ~ "400-500",
+    TRUE ~ "500+"
+  ))
+
+# Count occurrences in each group
+grouped_data <- data3 %>% 
+  count(group)
+
+# Create the bar chart using highcharter
+colors <- c("#1f77b4", "#ff7f0e", "#2ca02c", "#d62728", "#9467bd", "#8c564b", "#e377c2", "#7f7f7f", "#bcbd22", "#17becf")
+hchart(grouped_data, "column", hcaes(x = group, y = n, color = group)) %>%
+  hc_title(text = "Distribution of Urea kg per Acre") %>%
+  hc_xAxis(title = list(text = "Kilogram Range")) %>%
+  hc_yAxis(title = list(text = "Count")) %>%
+  hc_tooltip(pointFormat = "Count: {point.y}")
+```
+
+```{r}
+#4
+data4 <- df %>%
+  mutate(group = case_when(
+    HH_CHEMICALS_UREA_PRICE == "Response not available" ~ "Response not available",
+    as.numeric(HH_CHEMICALS_UREA_PRICE) <= 3 ~ "0-3",
+    as.numeric(HH_CHEMICALS_UREA_PRICE) <= 6 ~ "3-6",
+    as.numeric(HH_CHEMICALS_UREA_PRICE) <= 9 ~ "6-9",
+    as.numeric(HH_CHEMICALS_UREA_PRICE) <= 12 ~ "9-12",
+    as.numeric(HH_CHEMICALS_UREA_PRICE) <= 15 ~ "12-15",
+    TRUE ~ "15+"
+  ))
+
+# Count occurrences in each group
+grouped_data <- data4 %>%
+  count(group)
+
+# Define a color palette
+colors <- c("#1f77b4", "#ff7f0e", "#2ca02c", "#d62728", "#9467bd", "#8c564b", "#e377c2", "#7f7f7f", "#bcbd22", "#17becf")
+
+# Create the bar chart using highcharter
+hchart(grouped_data, "column", hcaes(x = group, y = n, color = group)) %>%
+  hc_title(text = "Distribution of Urea Price per Kilogram") %>%
+  hc_xAxis(title = list(text = "Price Range")) %>%
+  hc_yAxis(title = list(text = "Count")) %>%
+  hc_colors(colors) %>%
+  hc_plotOptions(column = list(colorByPoint = TRUE)) %>%
+  hc_tooltip(pointFormat = "Count: {point.y}")
+```
+
+```{r}
+#5
+sample_data <- df %>%
+  rename(HH_CHEMICALS_UREA_WHERE_DO_YOU_GET_IT_FROM = `HH_CHEMICALS_UREA_WHERE_DO_YOU_GET_IT_FROM`) %>%
+  mutate(HH_CHEMICALS_UREA_WHERE_DO_YOU_GET_IT_FROM = as.character(HH_CHEMICALS_UREA_WHERE_DO_YOU_GET_IT_FROM))
+
+# Count occurrences of each response
+data4 <- sample_data %>%
+  count(HH_CHEMICALS_UREA_WHERE_DO_YOU_GET_IT_FROM)
+
+# Create the pie chart using highcharter
+hchart(data4, "pie", hcaes(name = HH_CHEMICALS_UREA_WHERE_DO_YOU_GET_IT_FROM, y = n)) %>%
+  hc_title(text = "Distribution of Urea Sources") %>%
+  hc_tooltip(pointFormat = "Count: {point.y} ({point.percentage:.1f}%)")
+```
+
+```{r}
+#6
+grouped_data <- df %>%
+  group_by(HH_CHEMICALS_BIOMASS_BURNING_FOR_FARM_PREPARATION) %>%
+  summarise(count = n()) %>%
+  arrange(desc(count))
+
+# Define a color palette
+colors <- c("#1f77b4", "#ff7f0e", "#2ca02c", "#d62728", "#9467bd", "#8c564b", "#e377c2", "#7f7f7f", "#bcbd22", "#17becf")
+
+
+# Create the bar plot using highcharter
+hchart(grouped_data, "column", hcaes(x = HH_CHEMICALS_BIOMASS_BURNING_FOR_FARM_PREPARATION, y = count, color=count)) %>%
+  hc_title(text = "Distribution of Burning Biomass for Farm Preparation") %>%
+  hc_xAxis(title = list(text = "Responses")) %>%
+  hc_yAxis(title = list(text = "Number of Individuals")) %>%
+  hc_tooltip(pointFormat = "Count: {point.y}")
+```
+
+```{r}
+#7
+# Convert the column to numeric
+df$HH_MANPOWER_INHOUSE_MALE_QUANTITY <- as.numeric(df$HH_MANPOWER_INHOUSE_MALE_QUANTITY)
+
+# Group the data and count the occurrences
+grouped_data <- df %>%
+  filter(!is.na(HH_MANPOWER_INHOUSE_MALE_QUANTITY)) %>%  # Remove NA values
+  group_by(HH_MANPOWER_INHOUSE_MALE_QUANTITY) %>%
+  summarise(count = n()) %>%
+  arrange(desc(count))
+
+# Create the pie chart using highcharter
+hchart(grouped_data, "pie", hcaes(x = as.factor(HH_MANPOWER_INHOUSE_MALE_QUANTITY), y = count)) %>%
+  hc_title(text = "Distribution of In-house Male WOrk Done is Hours Per Day") %>%
+  hc_tooltip(pointFormat = "Count: {point.y}")
+```
+
+```{r}
+#8
+# Convert the column to numeric
+df$HH_MANPOWER_INHOUSE_FEMALE_QUANTITY <- as.numeric(df$HH_MANPOWER_INHOUSE_FEMALE_QUANTITY)
+
+# Group the data and count the occurrences
+grouped_data <- df %>%
+  filter(!is.na(HH_MANPOWER_INHOUSE_FEMALE_QUANTITY)) %>%  # Remove NA values
+  group_by(HH_MANPOWER_INHOUSE_FEMALE_QUANTITY) %>%
+  summarise(count = n()) %>%
+  arrange(desc(count))
+
+# Create the pie chart using highcharter
+hchart(grouped_data, "pie", hcaes(x = as.factor(HH_MANPOWER_INHOUSE_FEMALE_QUANTITY), y = count)) %>%
+  hc_title(text = "Distribution of In-house Female WOrk Done is Hours Per Day") %>%
+  hc_tooltip(pointFormat = "Count: {point.y}") 
+```
+
+```{r}
+#9
+# Convert the 'HH_MANPOWER_HIRED_MALE_QUANTITY' column to numeric and replace "Response not available" with NA
+df$HH_MANPOWER_HIRED_MALE_QUANTITY <- as.numeric(as.character(df$HH_MANPOWER_HIRED_MALE_QUANTITY))
+
+# Categorize the data into bins: 0-15, 15-30, 30-45, 50+
+sample_data <- df %>%
+  mutate(group = case_when(
+    HH_MANPOWER_HIRED_MALE_QUANTITY >= 0 & HH_MANPOWER_HIRED_MALE_QUANTITY <= 15 ~ "0-15",
+    HH_MANPOWER_HIRED_MALE_QUANTITY > 15 & HH_MANPOWER_HIRED_MALE_QUANTITY <= 30 ~ "15-30",
+    HH_MANPOWER_HIRED_MALE_QUANTITY > 30 & HH_MANPOWER_HIRED_MALE_QUANTITY <= 45 ~ "30-45",
+    HH_MANPOWER_HIRED_MALE_QUANTITY > 45 ~ "50+"
+  ))
+
+
+# Count the frequency of each group
+grouped_data <- sample_data %>%
+  group_by(group, HH_MANPOWER_HIRED_MALE_QUANTITY) %>%
+  summarise(count = n()) %>%
+  ungroup()
+
+# Create the stacked bar plot using ggplot2
+p <- ggplot(grouped_data, aes(x = group, y = count, fill = as.factor(HH_MANPOWER_HIRED_MALE_QUANTITY))) +
+  geom_bar(stat = "identity") +
+  labs(title = "Hired Male in Hours",
+       x = "Work in Hours",
+       y = "Individuals (Men)",
+       fill = "Work in Hours") +
+  theme_minimal()
+
+interactive_plot <- ggplotly(p)
+interactive_plot
+
+```
+
+```{r}
+#10
+# Convert the 'HH_MANPOWER_HIRED_FEMALE_QUANTITY' column to numeric and replace "Response not available" with NA
+df$HH_MANPOWER_HIRED_FEMALE_QUANTITY <- as.numeric(as.character(df$HH_MANPOWER_HIRED_FEMALE_QUANTITY))
+
+# Categorize the data into bins: 0-15, 15-30, 30-45, 50+
+sample_data <- df %>%
+  mutate(group = case_when(
+    HH_MANPOWER_HIRED_FEMALE_QUANTITY >= 0 & HH_MANPOWER_HIRED_FEMALE_QUANTITY <= 15 ~ "0-15",
+    HH_MANPOWER_HIRED_FEMALE_QUANTITY > 15 & HH_MANPOWER_HIRED_FEMALE_QUANTITY <= 30 ~ "15-30",
+    HH_MANPOWER_HIRED_FEMALE_QUANTITY > 30 & HH_MANPOWER_HIRED_FEMALE_QUANTITY <= 45 ~ "30-45",
+    HH_MANPOWER_HIRED_FEMALE_QUANTITY > 45 ~ "50+"
+  ))
+
+
+# Count the frequency of each group
+grouped_data <- sample_data %>%
+  group_by(group, HH_MANPOWER_HIRED_FEMALE_QUANTITY) %>%
+  summarise(count = n()) %>%
+  ungroup()
+
+# Create the stacked bar plot using ggplot2
+q <- ggplot(grouped_data, aes(x = group, y = count, fill = as.factor(HH_MANPOWER_HIRED_FEMALE_QUANTITY))) +
+  geom_bar(stat = "identity") +
+  labs(title = "Hired Female in Hours",
+       x = "Work in Hours",
+       y = "Individuals (Women)",
+       fill = "Work in Hours") +
+  theme_minimal()
+
+interactive_plot <- ggplotly(q)
+interactive_plot
+```
+
+```         
+```
+
+```{r}
+#11
+# Counting 'Response not available' in the hired female wage where hired male wage has a value
+response_not_available_count <- sum(df$HH_MANPOWER_HIRED_MALE_RATE != "Response not available" & df$HH_MANPOWER_HIRED_FEMALE_RATE == "Response not available")
+
+# Print the count
+print(response_not_available_count)
+
+# Filter the data to keep only rows where both columns have numeric values
+filtered_data <- df %>%
+  filter(HH_MANPOWER_HIRED_MALE_RATE != "Response not available" & 
+         HH_MANPOWER_HIRED_FEMALE_RATE != "Response not available")
+
+
+# Create the interactive line plot
+line_plot <- plot_ly(filtered_data, x = ~1:nrow(filtered_data)) %>%
+  add_lines(y = ~HH_MANPOWER_HIRED_MALE_RATE, line = list(color = 'blue'), name = 'Male Worker Rate in Rs.') %>%
+  add_lines(y = ~HH_MANPOWER_HIRED_FEMALE_RATE, line = list(color = 'red'), name = 'Female Worker Rate in Rs.') %>%
+  layout(title = 'Plot of Hired Male and Female Worker Rates',
+         xaxis = list(title = 'Individual Number'),
+         yaxis = list(title = 'Hired Rate in Rs.'),
+         legend = list(title = 'Rate Type'))
+
+# Display the plot
+line_plot
+```
+
+```{r}
+
+```
