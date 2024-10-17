@@ -12,11 +12,11 @@ library(dplyr)
 library(tidyverse)
 library(plotly)
 library(googlesheets4)
-#sample_data<-read_xlsx("C:/Users/annie/OneDrive/Desktop/Book1.xlsx")
+
 
 df<-read_xlsx("C:/Users/annie/OneDrive/Desktop/csd github.xlsx")
 
-#df = read_sheet("https://docs.google.com/spreadsheets/d/1aBFpJgDVlDqzhApJ7u1ZTJUdG91H-ZlfOLiLHzgLF5o/edit?pli=1&gid=2110327316#gid=2110327316", sheet =3)
+
 
 ```
 
